@@ -4,9 +4,9 @@ import akka.actor.{Actor, ActorLogging, Props}
 import coders.telegram.Boot.config
 import com.rabbitmq.client.{Channel, MessageProperties}
 import org.json4s.jackson.Serialization.write
-
 import kz.domain.library.messages.{SenderDetails, UserMessage}
-import scala.kz.domain.library.utils.TelegramSerializers
+import kz.domain.library.utils.{SendGetRepositoriesRequest, SendGetUserRequest, TelegramSerializers}
+
 import scala.util.{Failure, Success, Try}
 
 object AmqpPublisherActor {
@@ -19,14 +19,18 @@ object AmqpPublisherActor {
 class AmqpPublisherActor(channel: Channel) extends Actor with ActorLogging with TelegramSerializers {
 
   override def receive: Receive = {
-    case GetUser(login, msgDetails) =>
+    case SendGetUserRequest(login, msgDetails) =>
       log.info(s"sending message to AMQP $login")
       val userMessage =
-        UserMessage("telegram", SenderDetails(
-          msgDetails.messageId,
-          msgDetails.from,
-          msgDetails.date,
-          msgDetails.chat),
+        UserMessage(
+          "telegram",
+          Some(
+            SenderDetails(
+              msgDetails.messageId,
+              msgDetails.from,
+              msgDetails.date,
+              msgDetails.chat)
+          ),
           Some(login),
           "getGithubUser",
           login)
@@ -46,14 +50,18 @@ class AmqpPublisherActor(channel: Channel) extends Actor with ActorLogging with 
           log.warning(s"couldn't message ${exception.getMessage}")
       }
 
-    case GetRepositories(login, msgDetails) =>
+    case SendGetRepositoriesRequest(login, msgDetails) =>
       log.info(s"sending message to AMQP $login")
       val userMessage =
-        UserMessage("telegram", SenderDetails(
-          msgDetails.messageId,
-          msgDetails.from,
-          msgDetails.date,
-          msgDetails.chat),
+        UserMessage(
+          "telegram",
+          Some(
+            SenderDetails(
+              msgDetails.messageId,
+              msgDetails.from,
+              msgDetails.date,
+              msgDetails.chat)
+          ),
           Some(login),
           "getUserRepositories",
           login)

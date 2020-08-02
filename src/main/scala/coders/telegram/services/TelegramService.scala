@@ -1,13 +1,11 @@
 package coders.telegram.services
 
 import java.time.LocalDateTime
-
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import cats.instances.future._
 import cats.syntax.functor._
-import coders.telegram.actors._
 import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.api.declarative.Commands
 import com.bot4s.telegram.clients.FutureSttpClient
@@ -15,10 +13,18 @@ import com.bot4s.telegram.future.{Polling, TelegramBot}
 import com.bot4s.telegram.models.Message
 import com.softwaremill.sttp.SttpBackend
 import com.softwaremill.sttp.okhttp.OkHttpFutureBackend
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.kz.domain.library.messages.GatewayResponse
+import kz.domain.library.messages.GatewayResponse
+import kz.domain.library.utils.{
+  GetRepositoriesFailedResponse,
+  GetRepositoriesResponse,
+  GetUserFailedResponse,
+  GetUserResponse,
+  Response,
+  SendGetRepositoriesRequest,
+  SendGetUserRequest
+}
 
 class TelegramService(token: String, publisherActor: ActorRef)
   extends TelegramBot
@@ -36,12 +42,15 @@ class TelegramService(token: String, publisherActor: ActorRef)
 
   def answerToUser(response: GatewayResponse): Unit = {
     reply(response.response) {
-      Message(
-        messageId = response.senderDetails.messageId.toInt,
-        from = response.senderDetails.from,
-        date = getCurrentDate(LocalDateTime.now()),
-        chat = response.senderDetails.chat
-      )
+      response.senderDetails match {
+        case Some(value) =>
+          Message(
+            messageId = value.messageId.toInt,
+            from = value.from,
+            date = getCurrentDate(LocalDateTime.now()),
+            chat = value.chat
+          )
+      }
     }.void
   }
 
@@ -52,7 +61,7 @@ class TelegramService(token: String, publisherActor: ActorRef)
   }
 
   onCommand("/getGithubUser") { implicit msg =>
-    (publisherActor ? GetUser(
+    (publisherActor ? SendGetUserRequest(
       msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
       msg
     )).mapTo[Response]
@@ -64,7 +73,7 @@ class TelegramService(token: String, publisherActor: ActorRef)
   }
 
   onCommand("/getUserRepositories") { implicit msg =>
-    (publisherActor ? GetRepositories(
+    (publisherActor ? SendGetRepositoriesRequest(
       msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
       msg
     )).mapTo[Response]

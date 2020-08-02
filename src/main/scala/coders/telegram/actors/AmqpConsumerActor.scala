@@ -6,7 +6,7 @@ import coders.telegram.services.TelegramService
 import com.rabbitmq.client.Channel
 import org.json4s.DefaultFormats
 
-import scala.kz.domain.library.messages.GatewayResponse
+import kz.domain.library.messages.GatewayResponse
 
 object AmqpConsumerActor {
   def props(channel: Channel, service: TelegramService): Props = Props(new AmqpConsumerActor(channel, service))

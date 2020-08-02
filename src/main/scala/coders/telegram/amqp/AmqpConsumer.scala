@@ -7,8 +7,9 @@ import com.rabbitmq.client.{AMQP, Consumer, Envelope, ShutdownSignalException}
 import org.json4s.jackson.JsonMethods.parse
 
 import scala.concurrent.duration.DurationInt
-import scala.kz.domain.library.messages.GatewayResponse
-import scala.kz.domain.library.utils.TelegramSerializers
+import kz.domain.library.messages.GatewayResponse
+import kz.domain.library.utils.TelegramSerializers
+
 
 object AmqpConsumer {
   def apply(consumerActor: ActorRef): AmqpConsumer = new AmqpConsumer(consumerActor)
