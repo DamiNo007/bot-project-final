@@ -20,7 +20,7 @@ import kz.domain.library.messages.GatewayResponse
 import kz.domain.library.utils._
 
 class TelegramService(token: String, publisherActor: ActorRef)
-  extends TelegramBot
+    extends TelegramBot
     with Polling
     with Commands[Future] {
 
@@ -47,7 +47,6 @@ class TelegramService(token: String, publisherActor: ActorRef)
     }.void
   }
 
-
   onCommand("/start") { implicit msg =>
     println(s"получил комманду ${msg.text}")
     reply("Привет").void
@@ -71,17 +70,21 @@ class TelegramService(token: String, publisherActor: ActorRef)
   }
 
   onCommand("/getGithubUser") { implicit msg =>
-    Future(publisherActor ! SendGetUserRequest(
-      msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
-      msg
-    ))
+    Future(
+      publisherActor ! SendGetUserRequest(
+        msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
+        msg
+      )
+    )
   }
 
   onCommand("/getUserRepositories") { implicit msg =>
-    Future(publisherActor ! SendGetRepositoriesRequest(
-      msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
-      msg
-    ))
+    Future(
+      publisherActor ! SendGetRepositoriesRequest(
+        msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
+        msg
+      )
+    )
   }
 
   onCommand("/currencies") { implicit msg =>
@@ -90,10 +93,12 @@ class TelegramService(token: String, publisherActor: ActorRef)
   }
 
   onCommand("/rates") { implicit msg =>
-    Future(publisherActor ! SendGetRatesRequest(
-      msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
-      msg
-    ))
+    Future(
+      publisherActor ! SendGetRatesRequest(
+        msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
+        msg
+      )
+    )
   }
 
   onCommand("/convert") { implicit msg =>
@@ -101,28 +106,19 @@ class TelegramService(token: String, publisherActor: ActorRef)
     val msgSplit = msg.text.getOrElse("unknown").split(" ").toList
     msgSplit match {
       case _ :: from :: to :: amount :: _ =>
-        Future(publisherActor ? SendGetConvertRequest(
-          from,
-          to,
-          amount,
-          msg
-        ))
+        Future(publisherActor ? SendGetConvertRequest(from, to, amount, msg))
       case _ => reply("Incorrect command! Example: /convert RUB KZT 100").void
     }
   }
 
   onCommand("/articles") { implicit msg =>
     println(s"получил комманду ${msg.text}")
-    Future(publisherActor ! SendGetArticlesRequest(
-      msg
-    ))
+    Future(publisherActor ! SendGetArticlesRequest(msg))
   }
 
   onCommand("/news") { implicit msg =>
     println(s"получил комманду ${msg.text}")
-    Future(publisherActor ! SendGetNewsRequest(
-      msg
-    ))
+    Future(publisherActor ! SendGetNewsRequest(msg))
   }
 
   onMessage { implicit msg =>

@@ -16,7 +16,10 @@ object AmqpPublisherActor {
 
 }
 
-class AmqpPublisherActor(channel: Channel) extends Actor with ActorLogging with TelegramSerializers {
+class AmqpPublisherActor(channel: Channel)
+    extends Actor
+    with ActorLogging
+    with TelegramSerializers {
 
   def publish(jsonMessage: String): Unit = {
     Try(
@@ -33,7 +36,9 @@ class AmqpPublisherActor(channel: Channel) extends Actor with ActorLogging with 
     }
   }
 
-  def toUserMessage(command: String, msgDetails: Message, args: List[String]): UserMessage = {
+  def toUserMessage(command: String,
+                    msgDetails: Message,
+                    args: List[String]): UserMessage = {
     UserMessage(
       "telegram",
       Some(
@@ -41,11 +46,13 @@ class AmqpPublisherActor(channel: Channel) extends Actor with ActorLogging with 
           msgDetails.messageId,
           msgDetails.from,
           msgDetails.date,
-          msgDetails.chat)
+          msgDetails.chat
+        )
       ),
       Some(msgDetails.text.getOrElse("unknown")),
       command,
-      Some(args))
+      Some(args)
+    )
   }
 
   override def receive: Receive = {
@@ -57,7 +64,8 @@ class AmqpPublisherActor(channel: Channel) extends Actor with ActorLogging with 
 
     case SendGetRepositoriesRequest(login, msgDetails) =>
       log.info(s"sending message to AMQP $login")
-      val userMessage = toUserMessage("getUserRepositories", msgDetails, List(login))
+      val userMessage =
+        toUserMessage("getUserRepositories", msgDetails, List(login))
       val jsonMessage: String = write(userMessage)
       publish(jsonMessage)
 
@@ -75,7 +83,8 @@ class AmqpPublisherActor(channel: Channel) extends Actor with ActorLogging with 
 
     case SendGetConvertRequest(from, to, amount, msgDetails) =>
       log.info(s"sending message to AMQP $from, $to, $amount")
-      val userMessage = toUserMessage("getConvert", msgDetails, List(from, to, amount))
+      val userMessage =
+        toUserMessage("getConvert", msgDetails, List(from, to, amount))
       val jsonMessage: String = write(userMessage)
       publish(jsonMessage)
 
