@@ -2,7 +2,6 @@ package coders.telegram.amqp
 
 import com.rabbitmq.client.AMQP.{Exchange, Queue}
 import com.rabbitmq.client.{Channel, Connection, ConnectionFactory}
-
 import scala.util.{Failure, Success, Try}
 
 object RabbitMqConnection {

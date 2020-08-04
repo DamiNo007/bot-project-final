@@ -13,6 +13,10 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % "2.6.7",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "org.json4s" %% "json4s-native" % "3.6.9",
-  "org.json4s" %% "json4s-jackson" % "3.6.9"
+  "org.json4s" %% "json4s-jackson" % "3.6.9",
+  "com.lucidchart" %% "xtract" % "2.0.0",
+  "com.lucidchart" %% "xtract-testing" % "2.0.0" % "test",
+  "com.typesafe.play" %% "play-json" % "2.8.1",
+  "org.scala-lang.modules" %% "scala-xml" % "1.1.0"
 )
 

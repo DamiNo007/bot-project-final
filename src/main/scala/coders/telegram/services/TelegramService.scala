@@ -1,6 +1,7 @@
 package coders.telegram.services
 
 import java.time.LocalDateTime
+
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
@@ -16,15 +17,7 @@ import com.softwaremill.sttp.okhttp.OkHttpFutureBackend
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import kz.domain.library.messages.GatewayResponse
-import kz.domain.library.utils.{
-  GetRepositoriesFailedResponse,
-  GetRepositoriesResponse,
-  GetUserFailedResponse,
-  GetUserResponse,
-  Response,
-  SendGetRepositoriesRequest,
-  SendGetUserRequest
-}
+import kz.domain.library.utils._
 
 class TelegramService(token: String, publisherActor: ActorRef)
   extends TelegramBot
@@ -60,28 +53,76 @@ class TelegramService(token: String, publisherActor: ActorRef)
     reply("Привет").void
   }
 
+  onCommand("/help") { implicit msg =>
+    println(s"получил комманду ${msg.text}")
+    reply(
+      """
+        |/start - starts the bot
+        |/help - describes each command
+        |/getGithubUser <login> - gets user's data
+        |/getUserRepositories <login> - gets user's repositories with description
+        |/currencies - gets the list of currencies
+        |/rates <currency> - gets current currency rates
+        |/convert <from> <to> <amount> - converts one currency to another
+        |/news - gets latest news from profit.kz
+        |/articles - get latest articles from profit.kz
+        |""".stripMargin
+    ).void
+  }
+
   onCommand("/getGithubUser") { implicit msg =>
-    (publisherActor ? SendGetUserRequest(
+    Future(publisherActor ! SendGetUserRequest(
       msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
       msg
-    )).mapTo[Response]
-      .map {
-        case res: GetUserResponse => reply(res.response)
-        case res: GetUserFailedResponse => reply(res.error)
-      }
-      .void
+    ))
   }
 
   onCommand("/getUserRepositories") { implicit msg =>
-    (publisherActor ? SendGetRepositoriesRequest(
+    Future(publisherActor ! SendGetRepositoriesRequest(
       msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
       msg
-    )).mapTo[Response]
-      .map {
-        case res: GetRepositoriesResponse => reply(res.response)
-        case res: GetRepositoriesFailedResponse => reply(res.error)
-      }
-      .void
+    ))
+  }
+
+  onCommand("/currencies") { implicit msg =>
+    println(s"получил комманду ${msg.text}")
+    Future(publisherActor ! SendGetCurrenciesRequest(msg))
+  }
+
+  onCommand("/rates") { implicit msg =>
+    Future(publisherActor ! SendGetRatesRequest(
+      msg.text.map(x => x.split(" ").last.trim).getOrElse("unknown"),
+      msg
+    ))
+  }
+
+  onCommand("/convert") { implicit msg =>
+    println(s"получил комманду ${msg.text}")
+    val msgSplit = msg.text.getOrElse("unknown").split(" ").toList
+    msgSplit match {
+      case _ :: from :: to :: amount :: _ =>
+        Future(publisherActor ? SendGetConvertRequest(
+          from,
+          to,
+          amount,
+          msg
+        ))
+      case _ => reply("Incorrect command! Example: /convert RUB KZT 100").void
+    }
+  }
+
+  onCommand("/articles") { implicit msg =>
+    println(s"получил комманду ${msg.text}")
+    Future(publisherActor ! SendGetArticlesRequest(
+      msg
+    ))
+  }
+
+  onCommand("/news") { implicit msg =>
+    println(s"получил комманду ${msg.text}")
+    Future(publisherActor ! SendGetNewsRequest(
+      msg
+    ))
   }
 
   onMessage { implicit msg =>
