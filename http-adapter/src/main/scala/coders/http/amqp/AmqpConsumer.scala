@@ -1,15 +1,21 @@
-package kz.coders.chat.gateway.amqp
+package coders.http.amqp
 
 import akka.actor.ActorRef
 import akka.util.Timeout
+import coders.http.actors.AmqpConsumerActor.ReceiveMessage
 import com.rabbitmq.client.{AMQP, Consumer, Envelope, ShutdownSignalException}
+import kz.domain.library.messages.GatewayResponse
+import org.json4s.jackson.JsonMethods.parse
+
 import scala.concurrent.duration.DurationInt
+import kz.domain.library.utils.SenderSerializers
+
 
 object AmqpConsumer {
-  def apply(amqpListenerActor: ActorRef): AmqpConsumer = new AmqpConsumer(amqpListenerActor)
+  def apply(consumerActor: ActorRef): AmqpConsumer = new AmqpConsumer(consumerActor)
 }
 
-class AmqpConsumer(amqpListenerActor: ActorRef) extends Consumer {
+class AmqpConsumer(consumerActor: ActorRef) extends Consumer with SenderSerializers {
 
   implicit val timeout: Timeout = 20.seconds
 
@@ -28,6 +34,7 @@ class AmqpConsumer(amqpListenerActor: ActorRef) extends Consumer {
                               envelope: Envelope,
                               properties: AMQP.BasicProperties,
                               body: Array[Byte]): Unit = {
-    amqpListenerActor ! new String(body)
+    val message = parse(new String(body)).extract[GatewayResponse]
+    consumerActor ! ReceiveMessage(message)
   }
 }

@@ -7,13 +7,13 @@ import com.rabbitmq.client.{AMQP, Consumer, Envelope, ShutdownSignalException}
 import org.json4s.jackson.JsonMethods.parse
 import scala.concurrent.duration.DurationInt
 import kz.domain.library.messages.GatewayResponse
-import kz.domain.library.utils.TelegramSerializers
+import kz.domain.library.utils.SenderSerializers
 
 object AmqpConsumer {
   def apply(consumerActor: ActorRef): AmqpConsumer = new AmqpConsumer(consumerActor)
 }
 
-class AmqpConsumer(consumerActor: ActorRef) extends Consumer with TelegramSerializers {
+class AmqpConsumer(consumerActor: ActorRef) extends Consumer with SenderSerializers {
 
   implicit val timeout: Timeout = 20.seconds
 
@@ -32,7 +32,7 @@ class AmqpConsumer(consumerActor: ActorRef) extends Consumer with TelegramSerial
                               envelope: Envelope,
                               properties: AMQP.BasicProperties,
                               body: Array[Byte]): Unit = {
-    val message = parse(new String(body)).extract[GatewayResponse]
-    consumerActor ! ReceiveMessage(message)
+    val response = parse(new String(body)).extract[GatewayResponse]
+    consumerActor ! ReceiveMessage(response)
   }
 }

@@ -1,21 +1,24 @@
-package kz.coders.chat.gateway
+package coders.http
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.stream.Materializer
-import com.typesafe.config.{Config, ConfigFactory}
-import kz.coders.chat.gateway.actors.{AmqpListenerActor, AmqpPublisherActor, DialogFlowActor}
-import kz.coders.chat.gateway.amqp.{AmqpConsumer, RabbitMqConnection}
+import coders.http.actors.AmqpConsumerActor
+import coders.http.amqp.{AmqpConsumer, RabbitMqConnection}
+import coders.http.routes.Routes
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
 
 object Boot extends App {
-  implicit val system = ActorSystem("chat-gateway")
+  implicit val system = ActorSystem("http-adapter")
   implicit val materializer: Materializer =
     Materializer.createMaterializer(system)
   implicit val executionContext: ExecutionContextExecutor =
     ExecutionContext.global
 
-  val config: Config = ConfigFactory.load()
+  val config = ConfigFactory.load()
 
   val connection = RabbitMqConnection.getRabbitMqConnection(
     config.getString("rabbitMq.username"),
@@ -26,10 +29,10 @@ object Boot extends App {
   )
 
   val channel = connection.createChannel()
-
-  val amqpPublisherActor = system.actorOf(AmqpPublisherActor.props(channel))
-  val dialogFlowActor = system.actorOf(DialogFlowActor.props(amqpPublisherActor))
-  val amqpListenerActor = system.actorOf(AmqpListenerActor.props(dialogFlowActor))
+  val routes = new Routes()
+  val host = config.getString("application.host")
+  val port = config.getInt("application.port")
+  val amqpConsumer = system.actorOf(AmqpConsumerActor.props(channel))
 
   RabbitMqConnection.declareExchange(
     channel,
@@ -51,18 +54,14 @@ object Boot extends App {
 
   RabbitMqConnection.declareAndBindQueue(
     channel,
-    config.getString("rabbitMq.queue.requestQueueName"),
-    config.getString("rabbitMq.exchange.requestExchangeName"),
-    config.getString("rabbitMq.routingKey.telegramRequestRoutingKey")
+    config.getString("rabbitMq.queue.httpResponseQueueName"),
+    config.getString("rabbitMq.exchange.responseExchangeName"),
+    config.getString("rabbitMq.routingKey.httpResponseRoutingKey")
   )
 
-  RabbitMqConnection.declareAndBindQueue(
-    channel,
-    config.getString("rabbitMq.queue.httpRequestQueueName"),
-    config.getString("rabbitMq.exchange.requestExchangeName"),
-    config.getString("rabbitMq.routingKey.httpRequestRoutingKey")
-  )
+  Http().bindAndHandle(routes.handlers, host, port)
 
-  channel.basicConsume(config.getString("rabbitMq.queue.requestQueueName"), AmqpConsumer(amqpListenerActor))
-  channel.basicConsume(config.getString("rabbitMq.queue.httpRequestQueueName"), AmqpConsumer(amqpListenerActor))
+  system.log.info(s"running on $host:$port")
+
+  channel.basicConsume(config.getString("rabbitMq.queue.httpResponseQueueName"), AmqpConsumer(amqpConsumer))
 }

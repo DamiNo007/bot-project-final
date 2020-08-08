@@ -1,27 +1,55 @@
 package kz.domain.library.utils
 
-import com.bot4s.telegram.models.ChatType
-import com.bot4s.telegram.models.ChatType.ChatType
-import org.json4s.JsonAST.JString
+import kz.domain.library.messages.{HttpSenderDetails, Sender, TelegramSenderDetails}
+import org.json4s.JsonAST.{JInt, JObject, JString}
 import org.json4s.{CustomSerializer, DefaultFormats}
-import scala.util.{Failure, Success, Try}
 
-trait TelegramSerializers {
+trait SenderSerializers {
 
-  class ChatTypeSerializers extends CustomSerializer[ChatType](
+  class SenderTypeSerializers extends CustomSerializer[Sender](
     implicit formats =>
       ( {
-        case JString(str) =>
-          Try(ChatType.withName(str)) match {
-            case Success(value) => value
-            case Failure(e) => throw new Exception("")
-          }
-      }, {
-        case s: ChatType =>
-          JString(s.toString)
+        case JObject(
+        List(
+        ("chatId", JInt(chatId)),
+        ("userId", JInt(userId)),
+        ("username", JString(username)),
+        ("lastname", JString(lastname)),
+        ("firstname", JString(firstname))
+        )
+        ) =>
+          TelegramSenderDetails(
+            chatId.toLong,
+            Some(userId.toInt),
+            Some(username),
+            Some(lastname),
+            Some(firstname))
+        case JObject(
+        List(
+        ("actorPath", JString(actorPath))
+        )
+        ) =>
+          HttpSenderDetails(actorPath)
+      }
+        , {
+        case obj: TelegramSenderDetails =>
+          JObject(
+            List(
+              ("chatId", JInt(obj.chatId)),
+              ("userId", JInt(BigInt(obj.userId.getOrElse(-1)))),
+              ("username", JString(obj.username.getOrElse(""))),
+              ("lastname", JString(obj.lastName.getOrElse(""))),
+              ("firstname", JString(obj.firstName.getOrElse("")))
+            )
+          )
+        case obj: HttpSenderDetails =>
+          JObject(
+            List(
+              ("actorPath", JString(obj.actorPath))
+            )
+          )
       })
   )
 
-  implicit val formats = DefaultFormats ++ List(new ChatTypeSerializers)
-
+  implicit val formats = DefaultFormats ++ List(new SenderTypeSerializers)
 }

@@ -5,7 +5,6 @@ import coders.telegram.actors.AmqpConsumerActor.ReceiveMessage
 import coders.telegram.services.TelegramService
 import com.rabbitmq.client.Channel
 import org.json4s.DefaultFormats
-
 import kz.domain.library.messages.GatewayResponse
 
 object AmqpConsumerActor {
@@ -19,7 +18,7 @@ class AmqpConsumerActor(channel: Channel, service: TelegramService) extends Acto
   implicit val formats = DefaultFormats
 
   override def receive: Receive = {
-    case ReceiveMessage(msg) =>
-      service.answerToUser(msg)
+    case ReceiveMessage(response) =>
+      service.answerToUser(response)
   }
 }
