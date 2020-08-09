@@ -1,35 +1,66 @@
 package kz.coders.chat.gateway.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
+import akka.stream.Materializer
 import akka.util.Timeout
-import com.google.cloud.dialogflow.v2.QueryResult
+import com.google.cloud.dialogflow.v2.{DetectIntentRequest, QueryInput, QueryResult, TextInput}
 import kz.coders.chat.gateway.actors.AmqpPublisherActor.SendResponse
-import kz.coders.chat.gateway.actors.DialogFlowActor.ProcessUserMessage
+import kz.coders.chat.gateway.actors.DialogFlowActor.{ProcessUserMessage, getDialogflowResponse}
 import kz.domain.library.messages.{GatewayResponse, Sender}
-import kz.coders.chat.gateway.Boot.{executionContext, materializer, system}
+import kz.coders.chat.gateway.actors.exchange.ExchangeWorkerActor
 import kz.coders.chat.gateway.actors.github.GithubWorkerActor
 import kz.coders.chat.gateway.actors.profitkz.{ArticlesWorkerActor, NewsWorkerActor}
-import kz.coders.chat.gateway.dialogflow.DialogflowConf
+import kz.coders.chat.gateway.dialogflow.DialogflowConnection._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
 object DialogFlowActor {
-  def props(publisherActor: ActorRef): Props =
+
+  def props(publisherActor: ActorRef)(implicit system: ActorSystem,
+                                      materializer: Materializer): Props =
     Props(new DialogFlowActor(publisherActor))
+
+  def getQueryInput(message: String): QueryInput = {
+    QueryInput
+      .newBuilder()
+      .setText(
+        TextInput
+          .newBuilder()
+          .setText(message)
+          .setLanguageCode("EN-US")
+          .build())
+      .build()
+  }
+
+  def getDialogflowResponse(message: String): QueryResult = {
+    sessionClient.detectIntent(
+      DetectIntentRequest
+        .newBuilder()
+        .setQueryInput(
+          getQueryInput(message)
+        )
+        .setSession(sessionName.toString)
+        .build()
+    )
+      .getQueryResult
+  }
 
   case class ProcessUserMessage(routingKey: String, message: String, sender: Sender)
 
 }
 
-class DialogFlowActor(publisherActor: ActorRef)
-  extends Actor with ActorLogging
-    with DialogflowConf {
+class DialogFlowActor(publisherActor: ActorRef)(implicit val system: ActorSystem,
+                                                materializer: Materializer)
+  extends Actor with ActorLogging {
 
+  implicit val ex: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 20.seconds
 
   val githubWorkerActor = context.actorOf(GithubWorkerActor.props())
   val newsWorkerActor = context.actorOf(NewsWorkerActor.props())
   val articlesWorkerActor = context.actorOf(ArticlesWorkerActor.props())
+  val exchangeWorkerActor = context.actorOf(ExchangeWorkerActor.props())
 
   def getParams(from: String, response: QueryResult): String = {
     response.getParameters.getFieldsMap
@@ -49,54 +80,42 @@ class DialogFlowActor(publisherActor: ActorRef)
     )
   }
 
+  def extractResponse(response: Future[Any], routingKey: String, sender: Sender): Unit = {
+    response.mapTo[Response].map {
+      case res: ReceivedResponse =>
+        sendResponse(routingKey, sender, res.response)
+      case res: ReceivedFailureResponse =>
+        sendResponse(routingKey, sender, res.error)
+    }
+  }
+
   override def receive: Receive = {
     case command: ProcessUserMessage =>
       val response = getDialogflowResponse(command.message)
       response.getIntent.getDisplayName match {
         case "get-github-account" =>
           val params = getParams("github-account", response)
-          (githubWorkerActor ? GetUser(params))
-            .mapTo[Response]
-            .map {
-              case res: GetUserResponse =>
-                sendResponse(command.routingKey, command.sender, res.response)
-
-              case res: GetUserFailedResponse =>
-                sendResponse(command.routingKey, command.sender, res.error)
-            }
+          extractResponse(githubWorkerActor ? GetUser(params), command.routingKey, command.sender)
         case "get-github-repos" =>
           val params = getParams("github-repos", response)
-          (githubWorkerActor ? GetRepositories(params))
-            .mapTo[Response]
-            .map {
-              case res: GetRepositoriesResponse =>
-                sendResponse(command.routingKey, command.sender, res.response)
-
-              case res: GetRepositoriesFailedResponse =>
-                sendResponse(command.routingKey, command.sender, res.error)
-            }
+          extractResponse(githubWorkerActor ? GetRepositories(params), command.routingKey, command.sender)
         case "get-news" =>
           val params = getParams("news", response)
-          (newsWorkerActor ? GetNews(params))
-            .mapTo[Response]
-            .map {
-              case res: GetNewsResponse =>
-                sendResponse(command.routingKey, command.sender, res.response)
-
-              case res: GetNewsFailedResponse =>
-                sendResponse(command.routingKey, command.sender, res.error)
-            }
+          extractResponse(newsWorkerActor ? GetNews(params), command.routingKey, command.sender)
         case "get-articles" =>
           val params = getParams("articles", response)
-          (articlesWorkerActor ? GetArticles(params))
-            .mapTo[Response]
-            .map {
-              case res: GetArticlesResponse =>
-                sendResponse(command.routingKey, command.sender, res.response)
-
-              case res: GetArticlesFailedResponse =>
-                sendResponse(command.routingKey, command.sender, res.error)
-            }
+          extractResponse(articlesWorkerActor ? GetArticles(params), command.routingKey, command.sender)
+        case "get-currencies" =>
+          val params = getParams("currencies", response)
+          extractResponse(exchangeWorkerActor ? GetCurrencies(params), command.routingKey, command.sender)
+        case "get-convert" =>
+          val amount = getParams("amount", response)
+          val from = getParams("from", response)
+          val to = getParams("to", response)
+          extractResponse(exchangeWorkerActor ? Convert(from, to, amount), command.routingKey, command.sender)
+        case "get-rates" =>
+          val params = getParams("rates", response)
+          extractResponse(exchangeWorkerActor ? GetRates(params), command.routingKey, command.sender)
         case _ =>
           publisherActor ! SendResponse(command.routingKey, GatewayResponse(response.getFulfillmentText, command.sender))
       }

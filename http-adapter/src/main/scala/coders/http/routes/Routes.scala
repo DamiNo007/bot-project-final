@@ -5,31 +5,37 @@ import akka.http.scaladsl.server.{RequestContext, Route, RouteResult}
 import akka.util.Timeout
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import akka.http.scaladsl.server.Directives._
-import coders.http.Boot.channel
 import coders.http.actors.PerRequest.PerRequestActor
-import coders.http.actors.{AmqpPublisherActor, Request, SendGetRepositoriesHttpRequest, SendGetUserHttpRequest}
+import coders.http.actors._
+import com.rabbitmq.client.Channel
+import com.typesafe.config.{Config, ConfigFactory}
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import org.json4s.jackson.Serialization
 import org.json4s.{DefaultFormats, Formats, Serialization}
 
 import scala.concurrent.duration.DurationInt
 
-class Routes()(implicit ex: ExecutionContext, system: ActorSystem) extends Json4sSupport {
+class Routes(channel: Channel)(implicit ex: ExecutionContext, system: ActorSystem) extends Json4sSupport {
   implicit val formats: Formats = DefaultFormats
   implicit val serialization: Serialization = Serialization
   implicit val timeout: Timeout = 5.seconds
-
-  val routingKey = "rabbitMq.routingKey.telegramResponseRoutingKey"
+  val config: Config = ConfigFactory.load()
 
   val handlers: Route = pathPrefix("api") {
-    pathPrefix("github") {
-      pathPrefix(Segment) { username =>
-        path("repos") { ctx =>
-          val body = SendGetRepositoriesHttpRequest(username)
-          completeRequest(body, ctx, AmqpPublisherActor.props(channel, routingKey))
-        } ~ get { ctx =>
-          val body = SendGetUserHttpRequest(username)
-          completeRequest(body, ctx, AmqpPublisherActor.props(channel, routingKey))
+    pathPrefix("bot") {
+      pathPrefix("get") {
+        post {
+          entity(as[SendRequest]) { body =>
+            ctx =>
+              completeRequest(
+                body,
+                ctx,
+                AmqpPublisherActor.props(
+                  channel,
+                  config.getString("rabbitMq.routingKey.httpRequestRoutingKey")
+                )
+              )
+          }
         }
       }
     }

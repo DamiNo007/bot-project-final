@@ -8,9 +8,9 @@ import scala.concurrent.ExecutionContext
 import com.lucidchart.open.xtract.{XmlReader, __}
 import com.lucidchart.open.xtract.XmlReader._
 import cats.syntax.all._
-import kz.coders.chat.gateway.Boot.config
-import kz.coders.chat.gateway.actors.{GetArticlesFailedResponse, GetArticlesHttpResponse, GetArticlesResponse}
-import kz.coders.chat.gateway.actors.profitkz.ArticlesRequesterActor.{ArticleItem, Articles, GetArticlesAll, GetArticlesAllHttp}
+import com.typesafe.config.{Config, ConfigFactory}
+import kz.coders.chat.gateway.actors.ReceivedResponse
+import kz.coders.chat.gateway.actors.profitkz.ArticlesRequesterActor._
 import kz.coders.chat.gateway.utils.RestClientImpl.getXml
 
 object ArticlesRequesterActor {
@@ -51,7 +51,7 @@ class ArticlesRequesterActor()(implicit val system: ActorSystem,
 
   implicit val ex: ExecutionContext = context.dispatcher
   implicit val formats: Formats = DefaultFormats
-
+  val config: Config = ConfigFactory.load()
   val baseUrl = config.getString("profitKZ.base-url")
 
   def mkListString(list: List[ArticleItem]): List[String] = {
@@ -79,19 +79,9 @@ class ArticlesRequesterActor()(implicit val system: ActorSystem,
       val result = mkListString(items.take(5))
       result match {
         case head :: tail =>
-          sender ! GetArticlesResponse(result.mkString("\n"))
+          sender ! ReceivedResponse(result.mkString("\n"))
         case _ =>
-          sender ! GetArticlesFailedResponse("No articles found")
-      }
-    case GetArticlesAllHttp(msg) =>
-      log.info(s"got message $msg")
-      val sender = context.sender()
-      val items = getArticles
-      items match {
-        case head :: tail =>
-          sender ! GetArticlesHttpResponse(items)
-        case _ =>
-          sender ! GetArticlesFailedResponse("No articles found")
+          sender ! ReceivedResponse("No articles found")
       }
   }
 }

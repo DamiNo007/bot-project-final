@@ -4,7 +4,8 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory}
 import kz.coders.chat.gateway.actors.{AmqpListenerActor, AmqpPublisherActor, DialogFlowActor}
-import kz.coders.chat.gateway.amqp.{AmqpConsumer, RabbitMqConnection}
+import kz.coders.chat.gateway.amqp.AmqpConsumer
+import kz.domain.library.utils.amqp.RabbitMqConnection
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
 

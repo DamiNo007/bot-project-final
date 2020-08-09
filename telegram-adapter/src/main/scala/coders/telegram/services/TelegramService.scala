@@ -1,7 +1,7 @@
 package coders.telegram.services
 
 import java.time.LocalDateTime
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import cats.instances.future._
 import cats.syntax.functor._
@@ -33,7 +33,7 @@ object TelegramService {
   }
 }
 
-class TelegramService(token: String, publisherActor: ActorRef)
+class TelegramService(token: String, publisherActor: ActorRef, system: ActorSystem)
   extends TelegramBot
     with Polling
     with Commands[Future] {
@@ -48,14 +48,19 @@ class TelegramService(token: String, publisherActor: ActorRef)
   }
 
   def answerToUser(response: GatewayResponse): Unit = {
-    val senderDetails = response.senderDetails.asInstanceOf[TelegramSenderDetails]
-    reply(response.response) {
-      Message(
-        1,
-        date = getCurrentDate(LocalDateTime.now()),
-        chat = Chat(senderDetails.chatId, ChatType.Private)
-      )
-    }.void
+    val senderDetails = response.senderDetails
+    senderDetails match {
+      case TelegramSenderDetails(chatId, userId, username, lastName, firstName) =>
+        reply(response.response) {
+          Message(
+            1,
+            date = getCurrentDate(LocalDateTime.now()),
+            chat = Chat(chatId, ChatType.Private)
+          )
+        }.void
+      case unhandledSenderDetails =>
+        system.log.warning("wrong type {}", unhandledSenderDetails.getClass.getName)
+    }
   }
 
   onCommand("/start") { implicit msg =>

@@ -2,10 +2,10 @@ package coders.telegram
 
 import akka.actor.{ActorRef, ActorSystem}
 import coders.telegram.actors.{AmqpConsumerActor, AmqpPublisherActor}
-import coders.telegram.amqp.{AmqpConsumer, RabbitMqConnection}
+import coders.telegram.amqp.AmqpConsumer
 import coders.telegram.services.TelegramService
 import com.typesafe.config.ConfigFactory
-
+import kz.domain.library.utils.amqp.RabbitMqConnection
 import scala.util.{Failure, Success}
 
 object Boot extends App {
@@ -22,8 +22,14 @@ object Boot extends App {
     config.getString("rabbitMq.virtualHost")
   )
   val channel = connection.createChannel()
-  val ref: ActorRef = system.actorOf(AmqpPublisherActor.props(channel))
-  val telegramService = new TelegramService(token, ref)
+
+  val ref: ActorRef = system.actorOf(
+    AmqpPublisherActor.props(
+      channel,
+      config.getString("rabbitMq.routingKey.telegramRequestRoutingKey")
+    )
+  )
+  val telegramService = new TelegramService(token, ref, system)
   val amqpConsumer = system.actorOf(AmqpConsumerActor.props(channel, telegramService))
 
   RabbitMqConnection.declareExchange(

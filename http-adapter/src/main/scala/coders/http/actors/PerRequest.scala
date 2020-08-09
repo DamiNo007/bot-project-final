@@ -7,7 +7,6 @@ import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import kz.domain.library.messages.GatewayResponse
 import org.json4s.{DefaultFormats, Formats, Serialization}
 import org.json4s.native.Serialization
-
 import scala.concurrent.{ExecutionContext, Promise}
 
 object PerRequest {

@@ -2,9 +2,9 @@ package kz.coders.chat.gateway.actors.github
 
 import akka.actor.{Actor, ActorSystem}
 import akka.stream.Materializer
-import kz.coders.chat.gateway.Boot.config
-import kz.coders.chat.gateway.actors.github.GithubRequesterActor.{GetUserAccount, GetUserRepositories, GithubRepository, GithubUser}
-import kz.coders.chat.gateway.actors.{GetRepositoriesFailedResponse, GetRepositoriesResponse, GetUserFailedResponse, GetUserResponse}
+import com.typesafe.config.{Config, ConfigFactory}
+import kz.coders.chat.gateway.actors.github.GithubRequesterActor._
+import kz.coders.chat.gateway.actors.{ReceivedFailureResponse, ReceivedResponse}
 import kz.coders.chat.gateway.utils.RestClientImpl._
 import org.json4s.jackson.JsonMethods.parse
 import org.json4s.{DefaultFormats, Formats, MappingException}
@@ -40,6 +40,7 @@ class GithubRequesterActor()(implicit val system: ActorSystem,
 
   implicit val ex: ExecutionContext = context.dispatcher
   implicit val formats: Formats = DefaultFormats
+  val config: Config = ConfigFactory.load()
 
   val baseUrl = config.getString("github.base-url")
 
@@ -74,7 +75,7 @@ class GithubRequesterActor()(implicit val system: ActorSystem,
       val sender = context.sender()
       getGithubUser(login).onComplete {
         case Success(user) =>
-          sender ! GetUserResponse(
+          sender ! ReceivedResponse(
             s"""
                |Full name: ${user.name}
                |Login: ${user.login}
@@ -84,9 +85,9 @@ class GithubRequesterActor()(implicit val system: ActorSystem,
                 .getOrElse("None")
             } """.stripMargin)
         case Failure(e: MappingException) =>
-          sender ! GetUserFailedResponse("Account does not exist!")
+          sender ! ReceivedFailureResponse("Account does not exist!")
         case Failure(e) =>
-          sender ! GetUserFailedResponse("Connection error occured!")
+          sender ! ReceivedFailureResponse("Connection error occured!")
       }
     case GetUserRepositories(login) =>
       val sender = context.sender()
@@ -97,11 +98,11 @@ class GithubRequesterActor()(implicit val system: ActorSystem,
             if (list.isEmpty)
               "Sorry, this account does not have any repositories yet!"
             else list.mkString("\n")
-          sender ! GetRepositoriesResponse(result)
+          sender ! ReceivedResponse(result)
         case Failure(e: MappingException) =>
-          sender ! GetRepositoriesFailedResponse("Account does not exist!")
+          sender ! ReceivedFailureResponse("Account does not exist!")
         case Failure(e) =>
-          sender ! GetRepositoriesFailedResponse("Connection error occured!")
+          sender ! ReceivedFailureResponse("Connection error occured!")
       }
   }
 }

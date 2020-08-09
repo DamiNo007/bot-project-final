@@ -32,10 +32,10 @@ lazy val `domain-library` = project
     name := "domain-library",
     version := "0.1",
     scalaVersion := sVersion,
-    libraryDependencies ++= commonDependencies ++ Seq(
+    libraryDependencies ++= Seq(
       "com.bot4s" %% "telegram-core" % "4.4.0-RC2",
       "com.softwaremill.sttp" %% "core" % "1.6.4"
-    )
+    ) ++ commonDependencies ++ amqpDependencies
   )
 
 lazy val `telegram-adapter` = project

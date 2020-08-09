@@ -3,7 +3,7 @@ package kz.coders.chat.gateway.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import kz.coders.chat.gateway.actors.DialogFlowActor.ProcessUserMessage
 import kz.domain.library.messages.UserMessage
-import kz.domain.library.utils.SenderSerializers
+import kz.domain.library.utils.serializers.SenderSerializers
 import org.json4s.jackson.JsonMethods.parse
 
 object AmqpListenerActor {

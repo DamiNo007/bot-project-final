@@ -1,8 +1,5 @@
 package kz.coders.chat.gateway
 
-import kz.coders.chat.gateway.actors.profitkz.ArticlesRequesterActor.ArticleItem
-import kz.coders.chat.gateway.actors.profitkz.NewsRequesterActor.NewsItem
-
 package object actors {
 
   trait Response
@@ -13,32 +10,26 @@ package object actors {
 
   case class GetRepositories(login: String) extends Request
 
-  case class GetUserResponse(response: String) extends Response
-
-  case class GetUserFailedResponse(error: String) extends Response
-
-  case class GetRepositoriesResponse(response: String) extends Response
-
-  case class GetRepositoriesFailedResponse(error: String) extends Response
-
   case class GetNews(msg: String) extends Request
 
   case class GetNewsHttp(msg: String) extends Request
-
-  case class GetNewsResponse(response: String) extends Response
-
-  case class GetNewsHttpResponse(news: List[NewsItem]) extends Response
-
-  case class GetNewsFailedResponse(error: String) extends Response
 
   case class GetArticles(msg: String) extends Request
 
   case class GetArticlesHttp(msg: String) extends Request
 
-  case class GetArticlesResponse(response: String) extends Response
+  case class GetCurrencies(msg: String) extends Request
 
-  case class GetArticlesHttpResponse(articles: List[ArticleItem]) extends Response
+  case class GetCurrenciesHttp(msg: String) extends Request
 
-  case class GetArticlesFailedResponse(error: String) extends Response
+  case class GetRates(currency: String) extends Request
+
+  case class GetRatesHttp(currency: String) extends Request
+
+  case class Convert(from: String, to: String, amount: String) extends Request
+
+  case class ReceivedResponse(response: String) extends Response
+
+  case class ReceivedFailureResponse(error: String) extends Response
 
 }

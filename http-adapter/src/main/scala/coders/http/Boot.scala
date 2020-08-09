@@ -4,10 +4,10 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.Materializer
 import coders.http.actors.AmqpConsumerActor
-import coders.http.amqp.{AmqpConsumer, RabbitMqConnection}
+import coders.http.amqp.AmqpConsumer
 import coders.http.routes.Routes
 import com.typesafe.config.ConfigFactory
-
+import kz.domain.library.utils.amqp.RabbitMqConnection
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
 
@@ -29,10 +29,11 @@ object Boot extends App {
   )
 
   val channel = connection.createChannel()
-  val routes = new Routes()
+  println(channel.getClass)
+  val routes = new Routes(channel)
   val host = config.getString("application.host")
   val port = config.getInt("application.port")
-  val amqpConsumer = system.actorOf(AmqpConsumerActor.props(channel))
+  val amqpConsumer = system.actorOf(AmqpConsumerActor.props(channel, system))
 
   RabbitMqConnection.declareExchange(
     channel,

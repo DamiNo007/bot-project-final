@@ -1,12 +1,13 @@
 package kz.coders.chat.gateway.actors
 
+import com.typesafe.config.{Config, ConfigFactory}
 import akka.actor.{Actor, ActorLogging, Props}
 import com.rabbitmq.client.{Channel, MessageProperties}
-import kz.coders.chat.gateway.Boot.config
 import kz.coders.chat.gateway.actors.AmqpPublisherActor.SendResponse
 import org.json4s.jackson.Serialization.write
 import kz.domain.library.messages.GatewayResponse
-import kz.domain.library.utils.SenderSerializers
+import kz.domain.library.utils.serializers.SenderSerializers
+
 import scala.util.{Failure, Success, Try}
 
 object AmqpPublisherActor {
@@ -23,13 +24,15 @@ class AmqpPublisherActor(channel: Channel)
     with ActorLogging
     with SenderSerializers {
 
+  val config: Config = ConfigFactory.load()
+
   override def receive: Receive = {
     case command: SendResponse =>
       val jsonMessage: String = write(command.response)
       Try(
         channel.basicPublish(
           config.getString("rabbitMq.exchange.responseExchangeName"),
-          config.getString(command.routingKey),
+          command.routingKey,
           MessageProperties.TEXT_PLAIN,
           jsonMessage.getBytes
         )

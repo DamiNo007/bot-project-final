@@ -4,8 +4,8 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.pattern.ask
 import akka.stream.Materializer
 import akka.util.Timeout
-import kz.coders.chat.gateway.actors.github.GithubRequesterActor.{GetUserAccount, GetUserRepositories}
-import kz.coders.chat.gateway.actors.{GetRepositories, GetRepositoriesFailedResponse, GetUser, GetUserFailedResponse}
+import kz.coders.chat.gateway.actors.github.GithubRequesterActor._
+import kz.coders.chat.gateway.actors.{GetRepositories, GetUser, ReceivedFailureResponse}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -30,14 +30,14 @@ class GithubWorkerActor()(implicit val system: ActorSystem,
         case Success(value) =>
           sender ! value
         case Failure(e) =>
-          sender ! GetUserFailedResponse(e.getMessage)
+          sender ! ReceivedFailureResponse(e.getMessage)
       }
     case GetRepositories(login) =>
       val sender = context.sender()
       (requestActor ? GetUserRepositories(login)).onComplete {
         case Success(value) => sender ! value
         case Failure(e) =>
-          sender ! GetRepositoriesFailedResponse(e.getMessage)
+          sender ! ReceivedFailureResponse(e.getMessage)
       }
   }
 }

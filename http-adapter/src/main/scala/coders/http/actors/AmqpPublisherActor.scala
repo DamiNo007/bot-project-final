@@ -1,28 +1,34 @@
 package coders.http.actors
 
 import akka.actor.{Actor, ActorLogging, Props}
-import coders.http.Boot.config
 import com.rabbitmq.client.{Channel, MessageProperties}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.json4s.jackson.Serialization.write
 import kz.domain.library.messages.{HttpSenderDetails, UserMessage}
-import kz.domain.library.utils.SenderSerializers
+import kz.domain.library.utils.serializers.SenderSerializers
 
 import scala.util.{Failure, Success, Try}
 
 object AmqpPublisherActor {
-  def props(channel: Channel, replyTo: String): Props = Props(new AmqpPublisherActor(channel, replyTo))
+  def props(channel: Channel, routingKey: String): Props =
+    Props(new AmqpPublisherActor(channel, routingKey))
 
   case class SendMessage(message: String)
 
 }
 
-class AmqpPublisherActor(channel: Channel, replyTo: String) extends Actor with ActorLogging with SenderSerializers {
+class AmqpPublisherActor(channel: Channel, routingKey: String)
+  extends Actor
+    with ActorLogging
+    with SenderSerializers {
+
+  val config: Config = ConfigFactory.load()
 
   def publish(jsonMessage: String): Unit = {
     Try(
       channel.basicPublish(
         config.getString("rabbitMq.exchange.requestExchangeName"),
-        config.getString("rabbitMq.routingKey.httpRequestRoutingKey"),
+        routingKey,
         MessageProperties.TEXT_PLAIN,
         jsonMessage.getBytes()
       )
@@ -34,7 +40,7 @@ class AmqpPublisherActor(channel: Channel, replyTo: String) extends Actor with A
   }
 
   def getUserMessage(actorPath: String, command: String): UserMessage = {
-    val replyTo = "rabbitMq.routingKey.httpResponseRoutingKey"
+    val replyTo = config.getString("rabbitMq.routingKey.httpResponseRoutingKey")
     UserMessage(
       HttpSenderDetails(
         actorPath
@@ -45,19 +51,11 @@ class AmqpPublisherActor(channel: Channel, replyTo: String) extends Actor with A
   }
 
   override def receive: Receive = {
-    case command: SendGetUserHttpRequest =>
-      log.info(s"sending message to AMQP ${command.login}")
+    case command: SendRequest =>
       val sender = context.sender()
       val actorPath = sender.path.toStringWithoutAddress
-      val userMessage = getUserMessage(actorPath, s"get github account ${command.login}")
-      val jsonMessage: String = write(userMessage)
-      publish(jsonMessage)
-
-    case command: SendGetRepositoriesHttpRequest =>
-      log.info(s"sending message to AMQP ${command.login}")
-      val sender = context.sender()
-      val actorPath = sender.path.toStringWithoutAddress
-      val userMessage = getUserMessage(actorPath, s"get repos ${command.login}")
+      val message = s"${command.msg}"
+      val userMessage = getUserMessage(actorPath, message)
       val jsonMessage: String = write(userMessage)
       publish(jsonMessage)
   }

@@ -1,4 +1,4 @@
-package coders.telegram.amqp
+package kz.domain.library.utils.amqp
 
 import com.rabbitmq.client.AMQP.{Exchange, Queue}
 import com.rabbitmq.client.{Channel, Connection, ConnectionFactory}
