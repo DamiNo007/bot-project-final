@@ -3,7 +3,7 @@ package kz.coders.chat.gateway.actors.exchange
 import akka.actor.{Actor, ActorLogging, ActorSystem}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.Materializer
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import kz.coders.chat.gateway.actors._
 import kz.coders.chat.gateway.actors.exchange.ExchangeRequesterActor._
 import org.json4s.{DefaultFormats, Formats, MappingException}
@@ -39,13 +39,12 @@ object ExchangeRequesterActor {
 
 }
 
-class ExchangeRequesterActor()(implicit val system: ActorSystem,
-                               materializer: Materializer)
+class ExchangeRequesterActor(config: Config)(implicit val system: ActorSystem,
+                                             materializer: Materializer)
   extends Actor with ActorLogging {
 
   implicit val ex: ExecutionContext = context.dispatcher
   implicit val formats: Formats = DefaultFormats
-  val config: Config = ConfigFactory.load()
 
   val baseUrl = config.getString("exchange.base-url")
   val ratesBaseUrl = config.getString("exchange.rates-base-url")

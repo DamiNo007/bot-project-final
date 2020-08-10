@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext
 import com.lucidchart.open.xtract.{XmlReader, __}
 import com.lucidchart.open.xtract.XmlReader._
 import cats.syntax.all._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import kz.coders.chat.gateway.actors.ReceivedResponse
 import kz.coders.chat.gateway.actors.profitkz.ArticlesRequesterActor._
 import kz.coders.chat.gateway.utils.RestClientImpl.getXml
@@ -45,13 +45,12 @@ object ArticlesRequesterActor {
 
 }
 
-class ArticlesRequesterActor()(implicit val system: ActorSystem,
-                               val materializer: Materializer)
+class ArticlesRequesterActor(config: Config)(implicit val system: ActorSystem,
+                                             val materializer: Materializer)
   extends Actor with ActorLogging {
 
   implicit val ex: ExecutionContext = context.dispatcher
   implicit val formats: Formats = DefaultFormats
-  val config: Config = ConfigFactory.load()
   val baseUrl = config.getString("profitKZ.base-url")
 
   def mkListString(list: List[ArticleItem]): List[String] = {

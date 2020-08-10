@@ -4,6 +4,7 @@ import akka.pattern.ask
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.stream.Materializer
 import akka.util.Timeout
+import com.typesafe.config.Config
 import kz.coders.chat.gateway.actors._
 import kz.coders.chat.gateway.actors.exchange.ExchangeRequesterActor._
 import org.json4s.{DefaultFormats, Formats}
@@ -12,12 +13,12 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 object ExchangeWorkerActor {
-  def props()(implicit system: ActorSystem, materializer: Materializer): Props =
-    Props(new ExchangeWorkerActor())
+  def props(config: Config)(implicit system: ActorSystem, materializer: Materializer): Props =
+    Props(new ExchangeWorkerActor(config))
 }
 
-class ExchangeWorkerActor()(implicit val system: ActorSystem,
-                            materializer: Materializer)
+class ExchangeWorkerActor(config: Config)(implicit val system: ActorSystem,
+                                          materializer: Materializer)
   extends Actor with ActorLogging {
 
   implicit val ex: ExecutionContext = context.dispatcher
@@ -25,7 +26,7 @@ class ExchangeWorkerActor()(implicit val system: ActorSystem,
   implicit val timeout: Timeout = 100.seconds
 
   val requestActor: ActorRef =
-    context.actorOf(Props(new ExchangeRequesterActor()))
+    context.actorOf(Props(new ExchangeRequesterActor(config)))
 
   override def receive: Receive = {
     case GetCurrencies(msg) =>

@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.stream.Materializer
 import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.Config
 import kz.coders.chat.gateway.actors.{GetArticles, ReceivedFailureResponse}
 import kz.coders.chat.gateway.actors.profitkz.ArticlesRequesterActor._
 import scala.concurrent.duration._
@@ -11,17 +12,17 @@ import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 object ArticlesWorkerActor {
-  def props()(implicit system: ActorSystem, materializer: Materializer): Props =
-    Props(new ArticlesWorkerActor())
+  def props(config: Config)(implicit system: ActorSystem, materializer: Materializer): Props =
+    Props(new ArticlesWorkerActor(config))
 }
 
-class ArticlesWorkerActor()(implicit val system: ActorSystem,
-                            materializer: Materializer)
+class ArticlesWorkerActor(config: Config)(implicit val system: ActorSystem,
+                                          materializer: Materializer)
   extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = 100.seconds
   implicit val ex: ExecutionContext = context.dispatcher
-  val requestActor = context.actorOf(Props(new ArticlesRequesterActor))
+  val requestActor = context.actorOf(Props(new ArticlesRequesterActor(config)))
 
   override def receive: Receive = {
     case GetArticles(msg) =>

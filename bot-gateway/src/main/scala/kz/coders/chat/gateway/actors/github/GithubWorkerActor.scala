@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.pattern.ask
 import akka.stream.Materializer
 import akka.util.Timeout
+import com.typesafe.config.Config
 import kz.coders.chat.gateway.actors.github.GithubRequesterActor._
 import kz.coders.chat.gateway.actors.{GetRepositories, GetUser, ReceivedFailureResponse}
 import scala.concurrent.ExecutionContext
@@ -11,17 +12,17 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 object GithubWorkerActor {
-  def props()(implicit system: ActorSystem, materializer: Materializer): Props =
-    Props(new GithubWorkerActor())
+  def props(config: Config)(implicit system: ActorSystem, materializer: Materializer): Props =
+    Props(new GithubWorkerActor(config))
 }
 
-class GithubWorkerActor()(implicit val system: ActorSystem,
-                          materializer: Materializer)
+class GithubWorkerActor(config: Config)(implicit val system: ActorSystem,
+                                        materializer: Materializer)
   extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = 100.seconds
   implicit val ex: ExecutionContext = context.dispatcher
-  val requestActor = context.actorOf(Props(new GithubRequesterActor))
+  val requestActor = context.actorOf(Props(new GithubRequesterActor(config)))
 
   override def receive: Receive = {
     case GetUser(login) =>

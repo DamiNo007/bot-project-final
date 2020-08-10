@@ -1,4 +1,4 @@
-package kz.domain.library.utils.amqp
+package kz.amqp.library.utils.connection
 
 import com.rabbitmq.client.AMQP.{Exchange, Queue}
 import com.rabbitmq.client.{Channel, Connection, ConnectionFactory}

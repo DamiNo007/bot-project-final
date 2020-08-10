@@ -8,18 +8,17 @@ import akka.http.scaladsl.server.Directives._
 import coders.http.actors.PerRequest.PerRequestActor
 import coders.http.actors._
 import com.rabbitmq.client.Channel
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import org.json4s.jackson.Serialization
 import org.json4s.{DefaultFormats, Formats, Serialization}
 
 import scala.concurrent.duration.DurationInt
 
-class Routes(channel: Channel)(implicit ex: ExecutionContext, system: ActorSystem) extends Json4sSupport {
+class Routes(channel: Channel, config: Config)(implicit ex: ExecutionContext, system: ActorSystem) extends Json4sSupport {
   implicit val formats: Formats = DefaultFormats
   implicit val serialization: Serialization = Serialization
   implicit val timeout: Timeout = 5.seconds
-  val config: Config = ConfigFactory.load()
 
   val handlers: Route = pathPrefix("api") {
     pathPrefix("bot") {
@@ -32,7 +31,9 @@ class Routes(channel: Channel)(implicit ex: ExecutionContext, system: ActorSyste
                 ctx,
                 AmqpPublisherActor.props(
                   channel,
-                  config.getString("rabbitMq.routingKey.httpRequestRoutingKey")
+                  config.getString("rabbitMq.exchange.requestExchangeName"),
+                  config.getString("rabbitMq.routingKey.httpRequestRoutingKey"),
+                  config.getString("rabbitMq.routingKey.httpResponseRoutingKey")
                 )
               )
           }

@@ -5,7 +5,7 @@ import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory}
 import kz.coders.chat.gateway.actors.{AmqpListenerActor, AmqpPublisherActor, DialogFlowActor}
 import kz.coders.chat.gateway.amqp.AmqpConsumer
-import kz.domain.library.utils.amqp.RabbitMqConnection
+import kz.amqp.library.utils.connection.RabbitMqConnection
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
 
@@ -28,7 +28,10 @@ object Boot extends App {
 
   val channel = connection.createChannel()
 
-  val amqpPublisherActor = system.actorOf(AmqpPublisherActor.props(channel))
+  val amqpPublisherActor = system.actorOf(AmqpPublisherActor.props(
+    channel,
+    config.getString("rabbitMq.exchange.responseExchangeName")
+  ))
   val dialogFlowActor = system.actorOf(DialogFlowActor.props(amqpPublisherActor))
   val amqpListenerActor = system.actorOf(AmqpListenerActor.props(dialogFlowActor))
 

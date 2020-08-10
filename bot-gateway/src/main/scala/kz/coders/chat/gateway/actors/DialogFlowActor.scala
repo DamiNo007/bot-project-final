@@ -57,10 +57,10 @@ class DialogFlowActor(publisherActor: ActorRef)(implicit val system: ActorSystem
   implicit val ex: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 20.seconds
 
-  val githubWorkerActor = context.actorOf(GithubWorkerActor.props())
-  val newsWorkerActor = context.actorOf(NewsWorkerActor.props())
-  val articlesWorkerActor = context.actorOf(ArticlesWorkerActor.props())
-  val exchangeWorkerActor = context.actorOf(ExchangeWorkerActor.props())
+  val githubWorkerActor = context.actorOf(GithubWorkerActor.props(config))
+  val newsWorkerActor = context.actorOf(NewsWorkerActor.props(config))
+  val articlesWorkerActor = context.actorOf(ArticlesWorkerActor.props(config))
+  val exchangeWorkerActor = context.actorOf(ExchangeWorkerActor.props(config))
 
   def getParams(from: String, response: QueryResult): String = {
     response.getParameters.getFieldsMap

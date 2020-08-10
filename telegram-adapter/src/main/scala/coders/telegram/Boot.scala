@@ -5,7 +5,7 @@ import coders.telegram.actors.{AmqpConsumerActor, AmqpPublisherActor}
 import coders.telegram.amqp.AmqpConsumer
 import coders.telegram.services.TelegramService
 import com.typesafe.config.ConfigFactory
-import kz.domain.library.utils.amqp.RabbitMqConnection
+import kz.amqp.library.utils.connection.RabbitMqConnection
 import scala.util.{Failure, Success}
 
 object Boot extends App {
@@ -26,7 +26,9 @@ object Boot extends App {
   val ref: ActorRef = system.actorOf(
     AmqpPublisherActor.props(
       channel,
-      config.getString("rabbitMq.routingKey.telegramRequestRoutingKey")
+      config.getString("rabbitMq.exchange.requestExchangeName"),
+      config.getString("rabbitMq.routingKey.telegramRequestRoutingKey"),
+      config.getString("rabbitMq.routingKey.telegramResponseRoutingKey")
     )
   )
   val telegramService = new TelegramService(token, ref, system)

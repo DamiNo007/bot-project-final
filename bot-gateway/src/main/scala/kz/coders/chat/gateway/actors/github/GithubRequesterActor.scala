@@ -2,7 +2,7 @@ package kz.coders.chat.gateway.actors.github
 
 import akka.actor.{Actor, ActorSystem}
 import akka.stream.Materializer
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import kz.coders.chat.gateway.actors.github.GithubRequesterActor._
 import kz.coders.chat.gateway.actors.{ReceivedFailureResponse, ReceivedResponse}
 import kz.coders.chat.gateway.utils.RestClientImpl._
@@ -34,14 +34,12 @@ object GithubRequesterActor {
 
 }
 
-class GithubRequesterActor()(implicit val system: ActorSystem,
-                             materializer: Materializer)
+class GithubRequesterActor(config: Config)(implicit val system: ActorSystem,
+                                           materializer: Materializer)
   extends Actor {
 
   implicit val ex: ExecutionContext = context.dispatcher
   implicit val formats: Formats = DefaultFormats
-  val config: Config = ConfigFactory.load()
-
   val baseUrl = config.getString("github.base-url")
 
   //  https://api.github.com/users/{$USER}

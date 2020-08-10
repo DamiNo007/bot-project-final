@@ -38,6 +38,16 @@ lazy val `domain-library` = project
     ) ++ commonDependencies ++ amqpDependencies
   )
 
+lazy val `amqp-library` = project
+  .in(file("amqp-library"))
+  .settings(
+    organization := "kz.coders",
+    name := "amqp-library",
+    version := "0.1",
+    scalaVersion := sVersion,
+    libraryDependencies ++= commonDependencies ++ amqpDependencies
+  )
+
 lazy val `telegram-adapter` = project
   .in(file("telegram-adapter"))
   .settings(
@@ -49,7 +59,7 @@ lazy val `telegram-adapter` = project
       "com.softwaremill.sttp" %% "core" % "1.6.4"
     ) ++ amqpDependencies ++ akkaDependencies ++ commonDependencies
   )
-  .dependsOn(`domain-library`)
+  .dependsOn(`domain-library`, `amqp-library`)
 
 lazy val `bot-gateway` = project
   .in(file("bot-gateway"))
@@ -61,7 +71,7 @@ lazy val `bot-gateway` = project
       "com.google.cloud" % "google-cloud-dialogflow" % "2.1.0"
     ) ++ amqpDependencies ++ akkaDependencies ++ commonDependencies
   )
-  .dependsOn(`domain-library`)
+  .dependsOn(`domain-library`, `amqp-library`)
 
 lazy val `http-adapter` = project
   .in(file("http-adapter"))
@@ -72,4 +82,4 @@ lazy val `http-adapter` = project
     libraryDependencies ++=
       amqpDependencies ++ akkaDependencies ++ commonDependencies
   )
-  .dependsOn(`domain-library`)
+  .dependsOn(`domain-library`, `amqp-library`)
