@@ -53,33 +53,6 @@ class DialogFlowActor(publisherActor: ActorRef)(implicit val system: ActorSystem
   implicit val ex: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 20.seconds
 
-  def getParams(from: String, response: QueryResult): String = {
-    response.getParameters.getFieldsMap
-      .get(from)
-      .getStringValue
-  }
-
-  def sendResponse(routingKey: String, sender: Sender, response: String): Unit = {
-    publisherActor ! SendResponse(
-      routingKey,
-      GatewayResponse(
-        s"""Вот что мне удалось найти:
-           |
-           |${response}""".stripMargin,
-        sender
-      )
-    )
-  }
-
-  def extractResponse(response: Future[Any], routingKey: String, sender: Sender): Unit = {
-    response.mapTo[Response].map {
-      case res: ReceivedResponse =>
-        sendResponse(routingKey, sender, res.response)
-      case res: ReceivedFailureResponse =>
-        sendResponse(routingKey, sender, res.error)
-    }
-  }
-
   override def receive: Receive = {
     case command: ProcessUserMessage =>
       val response = getDialogflowResponse(command.message)
