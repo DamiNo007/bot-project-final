@@ -29,7 +29,6 @@ object Boot extends App {
   )
 
   val channel = connection.createChannel()
-  println(channel.getClass)
   val routes = new Routes(channel, config)
   val host = config.getString("application.host")
   val port = config.getInt("application.port")

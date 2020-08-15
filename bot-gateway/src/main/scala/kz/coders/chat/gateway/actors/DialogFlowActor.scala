@@ -8,7 +8,7 @@ import kz.coders.chat.gateway.actors.AmqpPublisherActor.SendResponse
 import kz.coders.chat.gateway.actors.DialogFlowActor.{ProcessUserMessage, getDialogflowResponse}
 import kz.domain.library.messages.{GatewayResponse, Sender}
 import kz.coders.chat.gateway.dialogflow.DialogflowConnection._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
 object DialogFlowActor {

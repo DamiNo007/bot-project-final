@@ -12,7 +12,6 @@ import com.typesafe.config.Config
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import org.json4s.jackson.Serialization
 import org.json4s.{DefaultFormats, Formats, Serialization}
-
 import scala.concurrent.duration.DurationInt
 
 class Routes(channel: Channel, config: Config)(implicit ex: ExecutionContext, system: ActorSystem) extends Json4sSupport {
