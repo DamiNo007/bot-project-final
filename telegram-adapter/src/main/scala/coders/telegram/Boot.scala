@@ -56,7 +56,7 @@ object Boot extends App {
     channel,
     config.getString("rabbitMq.queue.responseQueueName"),
     config.getString("rabbitMq.exchange.responseExchangeName"),
-    config.getString("rabbitMq.routingKey.telegramResponseRoutingKey")
+    config.getString("rabbitMq.telegramResponseRoutingKey")
   )
 
   telegramService.run()
